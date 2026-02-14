@@ -15,7 +15,8 @@ type RedirectState =
   | { type: 'none' }
   | { type: 'redirecting'; url: ShortenedUrl; shortCode: string }
   | { type: 'not-found'; shortCode: string }
-  | { type: 'expired'; url: ShortenedUrl; shortCode: string };
+  | { type: 'expired'; url: ShortenedUrl; shortCode: string }
+  | { type: 'password-protected'; url: ShortenedUrl; shortCode: string };
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('shorten');
@@ -52,6 +53,11 @@ export function App() {
 
     if (isExpired(found.expiresAt)) {
       setRedirectState({ type: 'expired', url: found, shortCode });
+      return;
+    }
+
+    if (found.password) {
+      setRedirectState({ type: 'password-protected', url: found, shortCode });
       return;
     }
 
@@ -101,6 +107,22 @@ export function App() {
     setRedirectState({ type: 'none' });
   }, []);
 
+  const handlePasswordVerified = useCallback((url: ShortenedUrl) => {
+    // Record the click and show redirecting page
+    const updated = incrementClicks(url.id);
+    setUrls(updated);
+    setRedirectState({ type: 'redirecting', url, shortCode: url.shortCode });
+
+    // Clear any existing timer
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+
+    redirectTimerRef.current = setTimeout(() => {
+      window.open(url.originalUrl, '_blank');
+      window.location.hash = '';
+      setRedirectState({ type: 'none' });
+    }, 1500);
+  }, []);
+
   // Redirect page
   if (redirectState.type !== 'none') {
     return (
@@ -109,6 +131,7 @@ export function App() {
         url={redirectState.type !== 'not-found' ? redirectState.url : undefined}
         shortCode={redirectState.shortCode}
         onBackToHome={handleBackToHome}
+        onPasswordVerified={handlePasswordVerified}
       />
     );
   }

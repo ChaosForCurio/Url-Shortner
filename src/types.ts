@@ -8,6 +8,7 @@ export interface ShortenedUrl {
   expiresAt: number | null;
   clicks: number;
   clickHistory: ClickEvent[];
+  password?: string;
 }
 
 export interface ClickEvent {

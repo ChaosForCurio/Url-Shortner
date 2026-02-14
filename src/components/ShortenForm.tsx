@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link2, Wand2, Clock, Sparkles, AlertCircle, Check, RotateCcw, Globe, ShieldCheck } from 'lucide-react';
+import { Link2, Wand2, Clock, Sparkles, AlertCircle, Check, RotateCcw, Globe, ShieldCheck, Lock } from 'lucide-react';
 import type { ShortenedUrl } from '../types';
 import { useToast } from '../hooks/useToast';
 import {
@@ -37,6 +37,9 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [duplicate, setDuplicate] = useState<ShortenedUrl | null>(null);
   const [urlPreview, setUrlPreview] = useState<{ domain: string; protocol: string } | null>(null);
+  const [password, setPassword] = useState('');
+  const [usePassword, setUsePassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const getExpirationTime = (): number | null => {
     const now = Date.now();
@@ -153,6 +156,7 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
         expiresAt: getExpirationTime(),
         clicks: 0,
         clickHistory: [],
+        password: usePassword && password.trim() ? password.trim() : undefined,
       };
 
       const updatedUrls = addUrl(newUrl);
@@ -182,6 +186,8 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
     setResult(null);
     setDuplicate(null);
     setUrlPreview(null);
+    setPassword('');
+    setUsePassword(false);
   };
 
   if (result) {
@@ -354,6 +360,50 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
               <option value="30d">30 Days</option>
             </select>
           </div>
+        </div>
+
+        {/* Password Protection */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${usePassword ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500'}`}>
+                <Lock size={16} />
+              </div>
+              <label className="text-sm font-semibold text-slate-700">Password Protection</label>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUsePassword(!usePassword)}
+              className={`relative w-10 h-6 rounded-full transition-colors ${usePassword ? 'bg-indigo-500' : 'bg-slate-300'
+                }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${usePassword ? 'left-5' : 'left-1'
+                  }`}
+              />
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-400 mb-3">Add an extra layer of security. Visitors must enter this password to be redirected.</p>
+
+          {usePassword && (
+            <div className="relative animate-[slideIn_0.2s_ease-out]">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter a secure password..."
+                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 text-sm transition-all"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] font-bold uppercase tracking-wider"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Error */}
