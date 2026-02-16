@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link2, Wand2, Clock, Sparkles, AlertCircle, Check, RotateCcw, Globe, ShieldCheck, Lock } from 'lucide-react';
 import type { ShortenedUrl } from '../types';
 import { useToast } from '../hooks/useToast';
@@ -11,6 +11,7 @@ import {
   ensureProtocol,
   extractDomain,
 } from '../utils/urlShortener';
+import { fetchUrlMetadata, type UrlMetadata } from '../utils/metadata';
 import {
   addUrl,
   isShortCodeUnique,
@@ -37,6 +38,8 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [duplicate, setDuplicate] = useState<ShortenedUrl | null>(null);
   const [urlPreview, setUrlPreview] = useState<{ domain: string; protocol: string } | null>(null);
+  const [metadata, setMetadata] = useState<UrlMetadata | null>(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [password, setPassword] = useState('');
   const [usePassword, setUsePassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -68,11 +71,34 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
         });
       } catch {
         setUrlPreview(null);
+        setMetadata(null);
       }
     } else {
       setUrlPreview(null);
+      setMetadata(null);
     }
   };
+
+  // Debounce metadata fetch
+  useEffect(() => {
+    const trimmed = url.trim();
+    if (!trimmed || !urlPreview) {
+      setMetadata(null);
+      return;
+    }
+
+    const withProtocol = ensureProtocol(trimmed);
+    if (!isValidUrl(withProtocol)) return;
+
+    setLoadingMetadata(true);
+    const timer = setTimeout(async () => {
+      const meta = await fetchUrlMetadata(withProtocol);
+      setMetadata(meta);
+      setLoadingMetadata(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [url, urlPreview]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,7 +211,9 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
     setError('');
     setResult(null);
     setDuplicate(null);
+    setDuplicate(null);
     setUrlPreview(null);
+    setMetadata(null);
     setPassword('');
     setUsePassword(false);
   };
@@ -245,16 +273,49 @@ export function ShortenForm({ onUrlCreated, toast }: ShortenFormProps) {
               autoFocus
             />
           </div>
-          {/* URL Preview */}
+          {/* URL Preview & Metadata */}
           {urlPreview && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm animate-[slideIn_0.2s_ease-out]">
-              <Globe size={14} />
-              <span className="font-medium">{urlPreview.domain}</span>
-              <span className="text-emerald-500 text-xs px-1.5 py-0.5 bg-emerald-100 rounded-md font-mono">
-                {urlPreview.protocol}
-              </span>
-              <ShieldCheck size={14} className="text-emerald-500 ml-auto" />
-              <span className="text-xs text-emerald-500">Valid URL</span>
+            <div className="space-y-3 animate-[slideIn_0.2s_ease-out]">
+              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm">
+                <Globe size={14} />
+                <span className="font-medium">{urlPreview.domain}</span>
+                <span className="text-emerald-500 text-xs px-1.5 py-0.5 bg-emerald-100 rounded-md font-mono">
+                  {urlPreview.protocol}
+                </span>
+                <ShieldCheck size={14} className="text-emerald-500 ml-auto" />
+                <span className="text-xs text-emerald-500">Valid URL</span>
+              </div>
+
+              {/* Rich Metadata Preview Card */}
+              {metadata && (
+                <div className="flex gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  {metadata.image ? (
+                    <img
+                      src={metadata.image}
+                      alt="Preview"
+                      className="w-24 h-24 object-cover rounded-lg shadow-sm bg-white"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                      <Globe size={32} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-slate-800 line-clamp-1 mb-1">
+                      {metadata.title || urlPreview.domain}
+                    </h4>
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-2">
+                      {metadata.description || 'No description available for this link.'}
+                    </p>
+                    {metadata.logo && (
+                      <div className="flex items-center gap-2">
+                        <img src={metadata.logo} alt="Logo" className="w-4 h-4 rounded-full" />
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider">{urlPreview.domain}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
