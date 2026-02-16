@@ -5,17 +5,7 @@ export function Architecture() {
     <div>
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-900">System Design: URL Shortener</h2>
-        <p className="text-slate-500 text-sm mt-1">
-          Architecture inspired by{' '}
-          <a
-            href="https://www.geeksforgeeks.org/system-design/system-design-url-shortening-service/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline"
-          >
-            GeeksforGeeks System Design
-          </a>
-        </p>
+
       </div>
 
       {/* High-Level Architecture */}

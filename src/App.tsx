@@ -158,17 +158,7 @@ export function App() {
             <span>•</span>
             <span>URL Shortener Service</span>
           </div>
-          <div className="text-xs text-slate-400">
-            System Design inspired by{' '}
-            <a
-              href="https://www.geeksforgeeks.org/system-design/system-design-url-shortening-service/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-500 hover:underline"
-            >
-              GeeksforGeeks
-            </a>
-          </div>
+
         </div>
       </footer>
 
